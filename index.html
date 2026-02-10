@@ -473,7 +473,7 @@
                     <form class="space-y-8" onsubmit="event.preventDefault()">
                         <input type="text" id="form-name" placeholder="Имя" class="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 p-5 rounded-2xl outline-none focus:border-premium-indigo transition-all font-medium text-slate-900 dark:text-white">
                         <input type="text" id="form-contact" placeholder="Telegram / Телефон" class="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 p-5 rounded-2xl outline-none focus:border-premium-indigo transition-all font-medium text-slate-900 dark:text-white">
-                        <button data-i18n="footer_btn" class="w-full py-6 rounded-2xl font-bold text-xl bg-obsidian dark:bg-white text-white dark:text-obsidian hover:bg-premium-indigo dark:hover:bg-premium-indigo dark:hover:text-white transition-all shadow-2xl uppercase tracking-widest text-sm">Заявка</button>
+                        <button onclick="sendToTelegram()" data-i18n="footer_btn" class="w-full py-6 rounded-2xl font-bold text-xl bg-obsidian dark:bg-white text-white dark:text-obsidian hover:bg-premium-indigo dark:hover:bg-premium-indigo dark:hover:text-white transition-all shadow-2xl uppercase tracking-widest text-sm">Заявка</button>
                     </form>
                 </div>
             </div>
@@ -585,6 +585,42 @@
 
         function toggleTheme() { document.documentElement.classList.toggle('dark'); }
         function toggleLanguage() { currentLang = currentLang === 'ru' ? 'en' : 'ru'; updateLanguage(); }
+
+        // TELEGRAM INTEGRATION
+        const TG_BOT_TOKEN = "8025728468:AAHdYTG7UlpE14r41PNKbhtWVuw6VTnXSsk"; // ВСТАВЬ ТОКЕН
+        const TG_CHAT_ID = "5732209142";
+
+        async function sendToTelegram() {
+            const name = document.getElementById('form-name').value;
+            const contact = document.getElementById('form-contact').value;
+            // Find footer button (it has no id, so find by text or parent)
+            const form = document.getElementById('form-name').parentElement;
+            const btn = form.querySelector('button');
+            
+            if(!name || !contact) {
+                alert("Please fill all fields / Заполните поля");
+                return;
+            }
+
+            const originalText = btn.innerText;
+            btn.innerText = "...";
+            btn.disabled = true;
+
+            const text = `🔥 *LEAD (Zero AI)*\n\n👤: ${name}\n📱: ${contact}\n🌍: 0ai.one`;
+
+            try {
+                await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: TG_CHAT_ID, text: text, parse_mode: 'Markdown' })
+                });
+                btn.innerText = "OK ✅";
+                setTimeout(() => { btn.innerText = originalText; btn.disabled = false; }, 3000);
+            } catch (e) {
+                console.error(e);
+                btn.innerText = "Error ❌";
+            }
+        }
 
         function updateLanguage() {
             document.getElementById('langToggle').innerText = currentLang === 'ru' ? 'EN' : 'RU';
