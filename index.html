@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero AI — Цифровые сотрудники нового поколения</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian: '#020617',
+                        premium: {
+                            indigo: '#4F46E5',
+                            slate: '#64748b',
+                            border: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    fontFamily: { 
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'] 
+                    },
+                    animation: {
+                        'slow-glow': 'glow 8s ease-in-out infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-subtle': 'pulse-subtle 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%, 100%': { opacity: 0.3, transform: 'scale(1)' },
+                            '50%': { opacity: 0.5, transform: 'scale(1.05)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-15px)' },
+                        },
+                        'pulse-subtle': {
+                            '0%, 100%': { opacity: 0.8 },
+                            '50%': { opacity: 1 },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            background: #ffffff;
+        }
+
+        .dark body {
+            background: #020617;
+        }
+
+        .noise {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.05; pointer-events: none; z-index: 9999;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.4s cubic-bezier(0.2, 0, 0.2, 1);
+        }
+
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .glass:hover {
+            border-color: rgba(79, 70, 229, 0.3);
+        }
+
+        .reveal { 
+            opacity: 0; 
+            filter: blur(10px);
+            transform: translateY(30px); 
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1); 
+        }
+        .reveal.active { 
+            opacity: 1; 
+            filter: blur(0px);
+            transform: translateY(0); 
+        }
+
+        .squircle { border-radius: 2rem; }
+
+        #cursor-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.18) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2;
+            will-change: transform;
+            transform: translate3d(-50%, -50%, 0);
+        }
+
+        .service-btn {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            color: rgba(0, 0, 0, 0.5);
+        }
+
+        .dark .service-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .service-btn.active {
+            background: #4F46E5 !important;
+            color: white !important;
+            opacity: 1 !important;
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 10px 40px rgba(79, 70, 229, 0.4);
+        }
+
+        .case-chart-path {
+            stroke-dasharray: var(--path-length, 1000);
+            stroke-dashoffset: var(--path-length, 1000);
+            transition: stroke-dashoffset 3.5s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: stroke-dashoffset;
+        }
+        .active .case-chart-path {
+            stroke-dashoffset: 0;
+        }
+
+        .case-bar {
+            height: 0% !important;
+            transition: height 2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            will-change: height;
+        }
+        .active .case-bar {
+            height: var(--target-height) !important;
+        }
+
+        #bgCanvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; pointer-events: none; opacity: 0.45;
+        }
+        
+        main, section, nav, footer { position: relative; z-index: 10; }
+
+        .premium-header {
+            font-size: clamp(2rem, 8vw, 5.5rem);
+            line-height: 0.95;
+            word-break: keep-all;
+            hyphens: auto;
+        }
+
+        @media (max-width: 768px) {
+            #cursor-glow { width: 250px; height: 250px; }
+            .squircle { border-radius: 1.5rem; }
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-obsidian text-slate-900 dark:text-white selection:bg-premium-indigo/30 overflow-x-hidden">
+    <div class="noise"></div>
+    <canvas id="bgCanvas"></canvas>
+    <div id="cursor-glow"></div>
+
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed top-0 w-full z-50 transition-all duration-700 py-8">
+        <div class="max-w-7xl mx-auto px-6 md:px-8 flex justify-between items-center text-slate-900 dark:text-white">
+            <div class="flex items-center gap-4 group cursor-pointer" onclick="window.scrollTo(0,0)">
+                <div class="relative w-10 h-10 transition-transform group-hover:scale-110 text-premium-indigo">
+                    <canvas id="logoCanvas" width="100" height="100" class="w-full h-full"></canvas>
+                </div>
+                <span class="text-xl font-bold tracking-tighter uppercase transition-all group-hover:tracking-normal">Zero <span class="text-premium-indigo">AI</span></span>
+            </div>
+
+            <div class="hidden md:flex items-center gap-10">
+                <a href="#services" data-i18n="nav_services" class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 hover:text-premium-indigo dark:hover:text-white transition-all">Услуги</a>
+                <a href="#pricing" data-i18n="nav_pricing" class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 hover:text-premium-indigo dark:hover:text-white transition-all">Цены</a>
+                <a href="#faq" data-i18n="nav_faq" class="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 hover:text-premium-indigo dark:hover:text-white transition-all">FAQ</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button onclick="toggleLanguage()" class="p-2.5 px-4 rounded-full border border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-all text-[10px] font-bold tracking-widest text-slate-500 dark:text-slate-400 hover:text-premium-indigo dark:hover:text-white" id="langToggle">
+                    EN
+                </button>
+                <button onclick="toggleTheme()" class="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all group">
+                    <i data-lucide="sun" class="hidden dark:block w-5 h-5 text-slate-400 group-hover:text-white"></i>
+                    <i data-lucide="moon" class="block dark:hidden w-5 h-5 text-slate-600 group-hover:text-black"></i>
+                </button>
+                <button onclick="scrollToContact()" data-i18n="nav_cta" class="bg-obsidian dark:bg-white text-white dark:text-obsidian px-6 md:px-8 py-3 rounded-full text-[10px] font-bold shadow-lg hover:bg-premium-indigo dark:hover:bg-premium-indigo dark:hover:text-white transition-all active:scale-95 uppercase tracking-widest">
+                    Запуск
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="relative min-h-[95vh] flex items-center justify-center pt-24 overflow-hidden">
+            <div class="absolute inset-0 z-0 pointer-events-none">
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140vw] h-[140vh] bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.15)_0%,transparent_60%)] animate-slow-glow"></div>
+            </div>
+            
+            <div class="relative z-10 text-center px-6 max-w-6xl mx-auto">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-10 reveal">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-premium-indigo opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-premium-indigo"></span>
+                    </span>
+                    <span data-i18n="hero_badge" class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Будущее управления бизнесом</span>
+                </div>
+                
+                <h1 class="text-5xl md:text-9xl font-semibold mb-10 tracking-tighter leading-[0.95] reveal text-slate-900 dark:text-white">
+                    <span data-i18n="hero_title_1">Ноль рутины.</span><br>
+                    <span data-i18n="hero_title_2" class="text-transparent bg-clip-text bg-gradient-to-r from-premium-indigo to-blue-400">Максимум прибыли.</span>
+                </h1>
+                
+                <p data-i18n="hero_desc" class="text-base md:text-2xl text-slate-600 dark:text-slate-400 mb-14 max-w-3xl mx-auto font-normal leading-relaxed reveal opacity-80">
+                    Внедряем цифровых сотрудников на базе <span class="text-slate-900 dark:text-white font-medium italic underline decoration-premium-indigo/30">ИИ</span>, которые работают 24/7. Без зарплат, без налогов, без нытья.
+                </p>
+                
+                <div class="flex flex-col md:flex-row items-center justify-center gap-6 reveal">
+                    <button onclick="scrollToContact()" class="group relative bg-premium-indigo hover:bg-indigo-600 text-white px-10 py-5 squircle font-bold text-lg transition-all shadow-2xl shadow-premium-indigo/30 overflow-hidden">
+                        <span class="relative z-10 flex items-center gap-3 text-white">
+                            <span data-i18n="hero_btn">Рассчитать стоимость</span>
+                            <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                        </span>
+                    </button>
+                    <div class="flex items-center gap-4 text-slate-500 dark:text-slate-400 font-medium opacity-60">
+                        <div class="flex -space-x-3">
+                            <div class="w-9 h-9 rounded-full border-2 border-white dark:border-obsidian bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-[9px]">AI</div>
+                            <div class="w-9 h-9 rounded-full border-2 border-white dark:border-obsidian bg-slate-300 dark:bg-slate-700 flex items-center justify-center text-[9px]">24/7</div>
+                            <div class="w-9 h-9 rounded-full border-2 border-white dark:border-obsidian bg-slate-400 dark:bg-slate-600 flex items-center justify-center text-[9px]">99%</div>
+                        </div>
+                        <span data-i18n="hero_trusted" class="text-xs">Доверяют 50+ компаний</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pain Section -->
+        <section id="pain" class="py-32 md:py-48 px-6 max-w-7xl mx-auto">
+            <div class="grid md:grid-cols-2 gap-12 md:gap-20 items-end mb-24 reveal text-slate-900 dark:text-white">
+                <div class="space-y-6">
+                    <h2 data-i18n="pain_title" class="text-3xl md:text-6xl font-semibold tracking-tighter uppercase leading-tight">Ваш бизнес теряет деньги, если:</h2>
+                    <div class="h-1 w-20 bg-premium-indigo rounded-full"></div>
+                </div>
+                <p data-i18n="pain_desc" class="text-lg md:text-xl text-slate-600 dark:text-slate-400 font-normal">Человеческий фактор обходится вашему бизнесу дороже, чем вы думаете. Мы превратили лучшие практики в алгоритмы.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="tilt-card p-8 md:p-10 squircle glass group reveal">
+                    <div class="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center mb-8">
+                        <i data-lucide="trending-down" class="text-red-500 w-6 h-6"></i>
+                    </div>
+                    <h3 data-i18n="pain_1_title" class="text-xl font-bold mb-4 text-slate-900 dark:text-white">Менеджеры забывают</h3>
+                    <p data-i18n="pain_1_desc" class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed opacity-80">Вы сливаете до 30% лидов в мусорку из-за обычного человеческого фактора.</p>
+                </div>
+                <div class="tilt-card p-8 md:p-10 squircle glass group reveal">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-8">
+                        <i data-lucide="mail" class="text-premium-indigo w-6 h-6"></i>
+                    </div>
+                    <h3 data-i18n="pain_2_title" class="text-xl font-bold mb-4 text-slate-900 dark:text-white">Реклама дорожает</h3>
+                    <p data-i18n="pain_2_desc" class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed opacity-80">Вы платите за каждый клик, а отдел продаж не успевает обрабатывать поток.</p>
+                </div>
+                <div class="tilt-card p-8 md:p-10 squircle glass group reveal">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-8">
+                        <i data-lucide="clock" class="text-blue-500 w-6 h-6"></i>
+                    </div>
+                    <h3 data-i18n="pain_3_title" class="text-xl font-bold mb-4 text-slate-900 dark:text-white">Клиенты ждут</h3>
+                    <p data-i18n="pain_3_desc" class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed opacity-80">В эпоху мгновенных ответов задержка в 5 минут — это потерянный контракт.</p>
+                </div>
+                <div class="tilt-card p-8 md:p-10 squircle glass group reveal">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-8">
+                        <i data-lucide="users" class="text-purple-500 w-6 h-6"></i>
+                    </div>
+                    <h3 data-i18n="pain_4_title" class="text-xl font-bold mb-4 text-slate-900 dark:text-white">ФОТ и Выгорание</h3>
+                    <p data-i18n="pain_4_desc" class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed opacity-80">Сотрудники болеют и теряют мотивацию. ИИ стабилен 24/7/365.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="py-32 md:py-48 bg-slate-50 dark:bg-white/[0.01]">
+            <div class="max-w-7xl mx-auto px-6">
+                <h2 data-i18n="services_title" class="text-4xl md:text-8xl font-semibold mb-20 tracking-tighter reveal uppercase text-slate-900 dark:text-white">Наймите AI-эксперта</h2>
+                <div class="grid lg:grid-cols-[1fr_1.8fr] gap-12 lg:gap-24">
+                    <div class="flex flex-col gap-3" id="services-tabs"></div>
+
+                    <div id="service-content" class="glass p-8 md:p-16 squircle flex flex-col justify-between min-h-[450px] reveal shadow-2xl relative overflow-hidden group">
+                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-premium-indigo/5 blur-[100px] pointer-events-none"></div>
+                        <div>
+                            <div id="s-badge" class="inline-block px-4 py-1.5 rounded-full bg-premium-indigo/10 text-premium-indigo text-[9px] font-bold uppercase tracking-widest mb-8"></div>
+                            <h3 id="s-title" class="text-3xl md:text-5xl font-semibold mb-6 tracking-tight text-slate-900 dark:text-white"></h3>
+                            <p id="s-desc" class="text-lg md:text-2xl text-slate-600 dark:text-slate-400 leading-relaxed font-normal mb-10"></p>
+                        </div>
+                        <div class="p-8 md:p-10 squircle bg-premium-indigo text-white flex items-center justify-between shadow-xl">
+                            <div>
+                                <span data-i18n="service_res_label" class="text-[9px] font-bold uppercase tracking-widest opacity-70 mb-2 block text-white">Ожидаемый результат:</span>
+                                <p id="s-res" class="text-xl md:text-2xl font-bold text-white"></p>
+                            </div>
+                            <i data-lucide="zap" class="w-8 h-8 opacity-30 animate-pulse-subtle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cases Section -->
+        <section id="cases" class="py-32 md:py-60 px-6 max-w-7xl mx-auto">
+            <div class="max-w-5xl mb-32 reveal text-slate-900 dark:text-white">
+                <h2 data-i18n="cases_main_title" class="premium-header font-semibold tracking-tighter mb-12 uppercase">Масштабирование<br><span class="text-premium-indigo">через данные</span></h2>
+                <p data-i18n="cases_main_desc" class="text-lg md:text-2xl text-slate-600 dark:text-slate-400 leading-relaxed font-normal italic max-w-3xl">Мы не просто внедряем ИИ — мы трансформируем P&L компаний, устраняя узкие места в воронках продаж.</p>
+            </div>
+
+            <!-- Case 1 -->
+            <div class="grid lg:grid-cols-[1.2fr_1fr] gap-12 md:gap-24 items-center mb-40 md:mb-60 reveal section-trigger-visual">
+                <div class="space-y-10">
+                    <div data-i18n="case_1_badge" class="inline-block px-5 py-2 rounded-full border border-premium-indigo/30 text-premium-indigo text-[9px] font-bold uppercase tracking-widest">Кейс: Недвижимость</div>
+                    <h3 data-i18n="case_1_title" class="text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tighter leading-none text-slate-900 dark:text-white uppercase">10,000 лидов за 4 часа</h3>
+                    <div class="grid grid-cols-2 gap-8 py-10 border-y border-black/5 dark:border-white/5 text-slate-900 dark:text-white">
+                        <div>
+                            <span data-i18n="case_before_label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-4 block">До (Колл-центр)</span>
+                            <div data-i18n="case_1_before" class="text-lg md:text-2xl font-bold opacity-40 italic">2 месяца</div>
+                        </div>
+                        <div>
+                            <span data-i18n="case_after_label" class="text-[9px] font-bold text-premium-indigo uppercase tracking-widest mb-4 block text-premium-indigo">После (AI)</span>
+                            <div data-i18n="case_1_after" class="text-3xl md:text-4xl font-bold text-premium-indigo">4 часа</div>
+                        </div>
+                    </div>
+                    <p data-i18n="case_1_desc" class="text-base md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed">Застройщик столкнулся с проблемой «холодной базы». Живые операторы просили 2 месяца. Наш Voice Agent обзвонил всех за утро и принес выручку в первый месяц.</p>
+                </div>
+                <div class="glass p-8 md:p-12 squircle relative group overflow-hidden h-[400px] md:h-[450px] flex items-center justify-center">
+                    <div class="absolute inset-0 bg-gradient-to-br from-premium-indigo/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <svg viewBox="0 0 200 150" class="w-full max-w-[300px]">
+                        <path class="case-chart-path stroke-premium-indigo" d="M10 140 Q 50 130, 80 80 T 190 20" fill="none" stroke-width="4" stroke-linecap="round"/>
+                        <circle cx="190" cy="20" r="6" fill="#4F46E5" class="animate-ping opacity-50"/>
+                        <text x="20" y="30" class="text-[10px] font-bold fill-premium-indigo uppercase tracking-widest">+2,400% КПД</text>
+                    </svg>
+                    <div class="absolute bottom-10 left-10 right-10 flex justify-between items-end text-slate-900 dark:text-white">
+                        <div data-i18n="case_perf_label" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Производительность</div>
+                        <div class="text-4xl font-bold tracking-tighter tabular-nums uppercase">Max</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Case 2 -->
+            <div class="grid lg:grid-cols-[1fr_1.2fr] gap-12 md:gap-24 items-center mb-40 md:mb-60 reveal section-trigger-visual">
+                <div class="order-2 lg:order-1 glass p-8 md:p-12 squircle h-[400px] md:h-[450px] flex flex-col justify-end">
+                    <div class="flex gap-3 md:gap-6 items-end mb-10 h-64">
+                        <div class="flex-1 bg-black/5 dark:bg-white/5 rounded-t-xl md:rounded-t-2xl case-bar" style="--target-height: 30%"></div>
+                        <div class="flex-1 bg-black/10 dark:bg-white/10 rounded-t-xl md:rounded-t-2xl case-bar" style="--target-height: 50%"></div>
+                        <div class="flex-1 bg-premium-indigo/40 rounded-t-xl md:rounded-t-2xl case-bar" style="--target-height: 75%"></div>
+                        <div class="flex-1 bg-premium-indigo rounded-t-xl md:rounded-t-2xl case-bar shadow-[0_0_30px_rgba(79,70,229,0.3)]" style="--target-height: 100%"></div>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-500 dark:text-slate-400">
+                        <span data-i18n="case_2_viz_label" class="text-[9px] font-bold uppercase tracking-widest">Рост доходимости</span>
+                        <span class="text-3xl md:text-4xl font-bold tabular-nums">+45%</span>
+                    </div>
+                </div>
+                <div class="order-1 lg:order-2 space-y-10">
+                    <div data-i18n="case_2_badge" class="inline-block px-5 py-2 rounded-full border border-premium-indigo/30 text-premium-indigo text-[9px] font-bold uppercase tracking-widest">Кейс: EdTech</div>
+                    <h3 data-i18n="case_2_title" class="text-3xl md:text-6xl font-semibold tracking-tighter leading-none text-slate-900 dark:text-white uppercase">ROI 300% на авто-воронке</h3>
+                    <div class="grid grid-cols-2 gap-8 py-10 border-y border-black/5 dark:border-white/5 text-slate-900 dark:text-white">
+                        <div>
+                            <span data-i18n="case_prob_label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-4 block">Проблема</span>
+                            <div data-i18n="case_2_prob" class="text-lg md:text-xl font-bold opacity-60 italic">Доходимость 20%</div>
+                        </div>
+                        <div>
+                            <span data-i18n="case_res_label" class="text-[9px] font-bold text-premium-indigo uppercase tracking-widest mb-4 block text-premium-indigo">Результат</span>
+                            <div class="text-3xl md:text-4xl font-bold text-premium-indigo tabular-nums">ROI 300%</div>
+                        </div>
+                    </div>
+                    <p data-i18n="case_2_desc" class="text-base md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed">Доходимость выросла с 20% до 65% благодаря внедрению системы AI-агентов.</p>
+                </div>
+            </div>
+
+            <!-- Case 3 -->
+            <div class="grid lg:grid-cols-[1.2fr_1fr] gap-12 md:gap-24 items-center reveal section-trigger-visual">
+                <div class="space-y-10 text-slate-900 dark:text-white">
+                    <div data-i18n="case_3_badge" class="inline-block px-5 py-2 rounded-full border border-black/10 dark:border-white/20 text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-widest">Кейс: E-commerce</div>
+                    <h3 data-i18n="case_3_title" class="text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tighter leading-none uppercase text-slate-900 dark:text-white uppercase">Мгновенный ответ в пик</h3>
+                    <div class="grid grid-cols-2 gap-8 py-10 border-y border-black/5 dark:border-white/5 text-slate-900 dark:text-white">
+                        <div>
+                            <span data-i18n="case_queue_label" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-4 block">Очередь</span>
+                            <div data-i18n="case_3_queue" class="text-lg md:text-2xl font-bold opacity-40 italic">до 1.5 часов</div>
+                        </div>
+                        <div>
+                            <span data-i18n="case_speed_label" class="text-[9px] font-bold text-premium-indigo uppercase tracking-widest mb-4 block text-premium-indigo">Скорость ИИ</span>
+                            <div class="text-3xl md:text-4xl font-bold text-premium-indigo tabular-nums">0.8 <span data-i18n="unit_sec">сек</span></div>
+                        </div>
+                    </div>
+                    <p data-i18n="case_3_desc" class="text-base md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed">AI Support теперь решает 82% всех обращений мгновенно.</p>
+                </div>
+                <div class="glass p-12 squircle flex flex-col items-center justify-center text-center">
+                    <div class="text-7xl md:text-8xl font-black text-premium-indigo mb-6 tracking-tighter tabular-nums" id="counter-case-3">0%</div>
+                    <p data-i18n="case_3_viz_label" class="text-[9px] font-bold uppercase tracking-[0.3em] text-slate-500">Автоматизация поддержки</p>
+                    <div class="mt-12 w-full space-y-3">
+                        <div class="h-1 bg-premium-indigo w-full rounded-full opacity-10"></div>
+                        <div class="h-1 bg-premium-indigo w-full rounded-full opacity-30 animate-pulse"></div>
+                        <div class="h-1 bg-premium-indigo w-full rounded-full opacity-60"></div>
+                        <div class="h-1 bg-premium-indigo w-full rounded-full shadow-[0_0_20px_rgba(79,70,229,0.5)]"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section id="pricing" class="py-40 bg-slate-50 dark:bg-obsidian overflow-hidden">
+            <div class="max-w-7xl mx-auto px-8">
+                <h2 data-i18n="pricing_title" class="text-5xl md:text-8xl font-semibold mb-24 text-center tracking-tighter reveal uppercase text-slate-900 dark:text-white">Инвестиции в рост</h2>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="p-12 squircle glass flex flex-col reveal text-slate-600 dark:text-slate-400 tilt-card">
+                        <h3 class="text-lg font-bold opacity-50 uppercase tracking-widest mb-4">Start</h3>
+                        <div class="text-6xl font-semibold mb-12 tracking-tighter text-slate-900 dark:text-white">$499<span class="text-sm opacity-40 font-normal ml-2">/мес</span></div>
+                        <ul class="space-y-6 mb-16 flex-1" id="pricing-list-1"></ul>
+                        <button onclick="scrollToContact()" data-i18n="pricing_btn_1" class="w-full py-5 squircle font-bold text-sm border border-black/10 dark:border-white/20 hover:bg-obsidian dark:hover:bg-white hover:text-white dark:hover:text-obsidian transition-all">Начать</button>
+                    </div>
+                    <div class="p-12 squircle bg-white text-obsidian dark:bg-white dark:text-obsidian shadow-2xl scale-105 z-10 flex flex-col reveal tilt-card" style="transition-delay: 100ms">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-bold uppercase tracking-widest text-premium-indigo">Growth</h3>
+                            <span data-i18n="pricing_pop" class="bg-premium-indigo text-white text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter">Популярно</span>
+                        </div>
+                        <div class="text-6xl font-semibold mb-12 tracking-tighter">$1,499<span class="text-sm text-slate-500 font-normal ml-2">/мес</span></div>
+                        <ul class="space-y-6 mb-16 flex-1 text-slate-700" id="pricing-list-2"></ul>
+                        <button onclick="scrollToContact()" data-i18n="pricing_btn_2" class="w-full py-5 squircle font-bold text-sm bg-premium-indigo text-white hover:bg-indigo-700 transition-all shadow-xl">Выбрать</button>
+                    </div>
+                    <div class="p-12 squircle glass flex flex-col reveal text-slate-600 dark:text-slate-400 tilt-card">
+                        <h3 class="text-lg font-bold opacity-50 uppercase tracking-widest mb-4">Scale</h3>
+                        <div data-i18n="pricing_custom" class="text-5xl font-semibold mb-12 uppercase text-slate-900 dark:text-white">Custom</div>
+                        <ul class="space-y-6 mb-16 flex-1" id="pricing-list-3"></ul>
+                        <button onclick="scrollToContact()" data-i18n="pricing_btn_3" class="w-full py-5 squircle font-bold text-sm border border-black/10 dark:border-white/20 hover:bg-obsidian dark:hover:bg-white hover:text-white dark:hover:text-obsidian transition-all">Обсудить</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section id="faq" class="py-32 md:py-48 px-6 max-w-4xl mx-auto">
+            <h2 data-i18n="faq_title" class="text-4xl md:text-7xl font-semibold tracking-tighter mb-20 text-center reveal uppercase text-slate-900 dark:text-white uppercase">FAQ</h2>
+            <div id="faq-list" class="space-y-4"></div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="pt-32 pb-16 border-t border-black/5 dark:border-white/5 text-center md:text-left text-slate-900 dark:text-white">
+        <div class="max-w-7xl mx-auto px-6 md:px-8">
+            <div class="grid lg:grid-cols-2 gap-20 mb-32 items-center">
+                <div class="reveal">
+                    <h2 class="text-5xl md:text-[80px] font-semibold leading-[0.9] tracking-tighter uppercase mb-10">
+                        <span data-i18n="footer_ready">Готовы к</span><br><span data-i18n="footer_scale" class="text-premium-indigo transition-all">масштабу?</span>
+                    </h2>
+                    <div class="flex items-center justify-center md:justify-start gap-4">
+                        <span class="font-bold opacity-40 uppercase tracking-widest text-[10px]">Telegram:</span>
+                        <a href="https://t.me/oloBTC" target="_blank" class="text-xl font-bold hover:text-premium-indigo transition-all">@oloBTC</a>
+                    </div>
+                </div>
+                <div id="contact-form-block" class="glass p-10 md:p-12 squircle reveal shadow-2xl">
+                    <form class="space-y-8" onsubmit="event.preventDefault()">
+                        <input type="text" id="form-name" placeholder="Имя" class="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 p-5 rounded-2xl outline-none focus:border-premium-indigo transition-all font-medium text-slate-900 dark:text-white">
+                        <input type="text" id="form-contact" placeholder="Telegram / Телефон" class="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 p-5 rounded-2xl outline-none focus:border-premium-indigo transition-all font-medium text-slate-900 dark:text-white">
+                        <button data-i18n="footer_btn" class="w-full py-6 rounded-2xl font-bold text-xl bg-obsidian dark:bg-white text-white dark:text-obsidian hover:bg-premium-indigo dark:hover:bg-premium-indigo dark:hover:text-white transition-all shadow-2xl uppercase tracking-widest text-sm">Заявка</button>
+                    </form>
+                </div>
+            </div>
+            <div class="pt-10 border-t border-black/5 dark:border-white/5 flex flex-col md:flex-row justify-between items-center opacity-30 text-[9px] font-bold uppercase tracking-[0.3em] text-slate-500">
+                <span>Zero AI Systems</span>
+                <p data-i18n="footer_copy">© 2024. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const translations = {
+            ru: {
+                nav_services: "Услуги", nav_pricing: "Цены", nav_faq: "FAQ", nav_cta: "Запуск",
+                hero_badge: "Будущее управления бизнесом", hero_title_1: "Ноль рутины.", hero_title_2: "Максимум прибыли.",
+                hero_desc: "Внедряем цифровых сотрудников на базе ИИ, которые работают 24/7. Без зарплат, без налогов, без нытья.",
+                hero_btn: "Рассчитать стоимость", hero_trusted: "Доверяют 50+ компаний",
+                pain_title: "Ваш бизнес теряет деньги, если:",
+                pain_desc: "Человеческий фактор обходится вашему бизнесу дороже, чем вы думаете. Мы превратили лучшие практики в алгоритмы.",
+                pain_1_title: "Менеджеры забывают", pain_1_desc: "Вы сливаете до 30% лидов в мусорку из-за человеческого фактора.",
+                pain_2_title: "Реклама дорожает", pain_2_desc: "Вы платите за каждый клик, а отдел продаж не успевает обрабатывать поток.",
+                pain_3_title: "Клиенты ждут", pain_3_desc: "В эпоху мгновенных ответов задержка в 5 минут — это потерянный контракт.",
+                pain_4_title: "ФОТ и Выгорание", pain_4_desc: "Сотрудники болеют и теряют мотивацию. ИИ стабилен 24/7/365.",
+                services_title: "Наймите AI-эксперта", service_res_label: "Ожидаемый результат:",
+                cases_main_title: "Масштабирование через данные", cases_main_desc: "Мы не просто внедряем ИИ — мы трансформируем P&L компаний, устраняя узкие места в воронках продаж.",
+                case_1_badge: "Кейс: Недвижимость", case_1_title: "10,000 лидов за 4 часа", case_1_before: "2 месяца", case_1_after: "4 часа",
+                case_1_desc: "Застройщик столкнулся с проблемой «холодной базы». Живые операторы просили 2 месяца. Наш Voice Agent обзвонил всех за утро и принес выручку в первый месяц.",
+                case_before_label: "До (Колл-центр)", case_after_label: "После (AI)", case_perf_label: "Производительность",
+                case_2_badge: "Кейс: EdTech", case_2_title: "ROI 300% на авто-воронке", case_2_prob: "Доходимость 20%",
+                case_2_desc: "Онлайн-школа внедрила AI-агентов, которые за 15 минут до старта вступали в диалог с участниками. Доходимость выросла с 20% до 65% без участия человека.",
+                case_prob_label: "Проблема", case_res_label: "Результат", case_2_viz_label: "Рост доходимости",
+                case_3_badge: "Кейс: E-commerce", case_3_title: "Мгновенный ответ в пик", case_3_queue: "до 1.5 часов",
+                case_3_desc: "AI Support теперь решает 82% всех обращений мгновенно, используя базу знаний компании. ФОТ сокращен в 3 раза при росте LTV на 12%.",
+                case_queue_label: "Очередь", case_speed_label: "Скорость ИИ", case_3_viz_label: "Автоматизация поддержки",
+                case_3_speed_val: "0.8 сек", unit_sec: "сек",
+                pricing_title: "Инвестиции в рост", pricing_pop: "Популярно", pricing_custom: "Custom",
+                pricing_btn_1: "Начать", pricing_btn_2: "Выбрать", pricing_btn_3: "Обсудить",
+                faq_title: "FAQ", footer_ready: "Готовы к", footer_scale: "масштабу?", footer_btn: "Заявка", footer_copy: "© 2024. All rights reserved."
+            },
+            en: {
+                nav_services: "Services", nav_pricing: "Pricing", nav_faq: "FAQ", nav_cta: "Launch",
+                hero_badge: "Future of business management", hero_title_1: "Zero routine.", hero_title_2: "Maximum profit.",
+                hero_desc: "We deploy AI-powered digital employees that work 24/7. No salaries, no taxes, no burnout.",
+                hero_btn: "Calculate cost", hero_trusted: "Trusted by 50+ companies",
+                pain_title: "Your business is losing money if:",
+                pain_desc: "Human error costs your business more than you think. We've turned best practices into algorithms.",
+                pain_1_title: "Managers forget", pain_1_desc: "You dump 30% of leads into the trash due to simple human factors.",
+                pain_2_title: "Ads get expensive", pain_2_desc: "You pay for every click, but sales can't handle the incoming flow.",
+                pain_3_title: "Clients are waiting", pain_3_desc: "In the era of instant responses, a 5-minute delay is a lost contract.",
+                pain_4_title: "Payroll & Burnout", pain_4_desc: "Staff get sick and lose motivation. AI is stable 24/7/365.",
+                services_title: "Hire an AI Expert", service_res_label: "Expected result:",
+                cases_main_title: "Scaling through data", cases_main_desc: "We don't just implement AI — we transform company P&L by fixing funnel bottlenecks.",
+                case_1_badge: "Case: Real Estate", case_1_title: "10,000 leads in 4 hours", case_1_before: "2 months", case_1_after: "4 hours",
+                case_1_desc: "Developer faced a 'cold base' problem. Our Voice Agent called everyone in one morning, generating revenue.",
+                case_before_label: "Before (Call center)", case_after_label: "After (AI)", case_perf_label: "Performance",
+                case_2_badge: "Case: EdTech", case_2_title: "300% ROI on auto-funnels", case_2_prob: "20% attendance",
+                case_2_desc: "Online school was losing profit. We deployed AI agents in WhatsApp that engaged users 15 min before start. Attendance grew from 20% to 65%.",
+                case_prob_label: "Problem", case_res_label: "Result", case_2_viz_label: "Attendance Growth",
+                case_3_badge: "Case: E-commerce", case_3_title: "Instant response in peak", case_3_queue: "up to 1.5 hours",
+                case_3_desc: "AI Support now resolves 82% of all queries instantly. Support costs cut by 3x with a 12% LTV boost.",
+                case_queue_label: "Queue", case_speed_label: "AI Speed", case_3_viz_label: "Support Automation",
+                case_3_speed_val: "0.8 sec", unit_sec: "sec",
+                pricing_title: "Growth Investment", pricing_pop: "Popular", pricing_custom: "Custom",
+                pricing_btn_1: "Start", pricing_btn_2: "Select", pricing_btn_3: "Discuss",
+                faq_title: "FAQ", footer_ready: "Ready to", footer_scale: "scale?", footer_btn: "Request", footer_copy: "© 2024. All rights reserved."
+            }
+        };
+
+        const serviceData = {
+            ru: [
+                { badge: "Инструмент продаж", title: "AI Sales Manager (SDR)", desc: "Автономный поиск клиентов в LinkedIn и Email. Сам находит ЛПР, пишет письма и доводит до встречи.", res: "Горячие лиды в вашем расписании." },
+                { badge: "Голосовые коммуникации", title: "AI Voice Agent", desc: "Звонит по холодной базе и принимает входящие. Голос неотличим от человека. Квалифицирует лида в CRM.", res: "10 000 звонков за 1 час." },
+                { badge: "Клиентский сервис", title: "AI Support", desc: "Отвечает за 2 секунды. Знает всю базу знаний компании. Решает 80% запросов без участия человека.", res: "ФОТ поддержки ниже в 3 раза." },
+                { badge: "Поиск в нейросетях", title: "GEO Оптимизация", desc: "Вывод бренда в ответы ChatGPT и Perplexity. Когда клиент спрашивает ИИ — рекомендуют именно ВАС.", res: "Трафик из ИИ без конкуренции." }
+            ],
+            en: [
+                { badge: "Sales Tool", title: "AI Sales Manager (SDR)", desc: "Autonomous prospecting in LinkedIn and Email. Finds decision makers, writes letters and sets meetings.", res: "Warm leads in your calendar." },
+                { badge: "Voice Communications", title: "AI Voice Agent", desc: "Cold calling and inbound handling. Voice indistinguishable from humans. Qualifies leads in CRM.", res: "10,000 calls in 1 hour." },
+                { badge: "Customer Service", title: "AI Support", desc: "Responds in 2 seconds. Knows the company knowledge base. Resolves 80% of queries automatically.", res: "Support costs cut by 3x." },
+                { badge: "AI Search Optimization", title: "GEO Optimization", desc: "Brand placement in ChatGPT and Perplexity. When clients ask AI — they recommend YOU.", res: "AI traffic without competition." }
+            ]
+        };
+
+        const pricingData = {
+            ru: [["1 AI-агент", "1000 диалогов", "Базовая настройка"], ["3 AI-агента", "Интеграция с CRM", "Аналитика звонков", "Обучение на базе"], ["Кастомная разработка", "Выделенный сервер", "SLA 99.9%"]],
+            en: [["1 AI-Agent", "1000 dialogs", "Basic setup"], ["3 AI-Agents", "CRM Integration", "Call Analytics", "KB Training"], ["Custom Development", "Dedicated Server", "99.9% SLA"]]
+        };
+
+        const faqData = {
+            ru: [
+                { q: "Это просто чат-бот?", a: "Нет, мы используем современные LLM (нейросети), которые понимают контекст и обучаются на ваших данных." },
+                { q: "Как быстро происходит внедрение?", a: "Базового агента запускаем за 3–5 дней. Сложные интеграции занимают до 2 недель." },
+                { q: "Безопасны ли наши данные?", a: "Мы используем выделенные серверы и шифрование. Данные не используются для обучения публичных моделей." },
+                { q: "С какими CRM вы работаете?", a: "Нативно поддерживаем amoCRM, Bitrix24 и Salesforce через открытое API." },
+                { q: "Нужна ли доплата за дообучение?", a: "Нет, техническое сопровождение и обновление базы знаний уже включены в тариф." }
+            ],
+            en: [
+                { q: "Is it just a chatbot?", a: "No, we use modern LLMs (neural networks) that understand context and learn from your specific data." },
+                { q: "How fast is deployment?", a: "Basic agents launch in 3-5 days. Complex integrations take up to 2 weeks." },
+                { q: "Is our data safe?", a: "We use dedicated servers and encryption. Data is not used to train public models." },
+                { q: "Which CRMs do you support?", a: "Native support for amoCRM, Bitrix24, and Salesforce via open API." },
+                { q: "Is there a fee for retraining?", a: "No, technical support and knowledge base updates are included in your plan." }
+            ]
+        };
+
+        let currentLang = 'ru';
+        let revealObserver;
+        let mouseX = 0, mouseY = 0;
+
+        function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+        function toggleLanguage() { currentLang = currentLang === 'ru' ? 'en' : 'ru'; updateLanguage(); }
+
+        function updateLanguage() {
+            document.getElementById('langToggle').innerText = currentLang === 'ru' ? 'EN' : 'RU';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[currentLang][key]) el.innerText = translations[currentLang][key];
+            });
+            document.getElementById('form-name').placeholder = currentLang === 'ru' ? 'Имя' : 'Name';
+            document.getElementById('form-contact').placeholder = currentLang === 'ru' ? 'Telegram / Телефон' : 'Telegram / Phone';
+            renderServices();
+            renderPricing();
+            initFAQ();
+        }
+
+        function renderServices() {
+            const tabs = document.getElementById('services-tabs');
+            if(!tabs) return;
+            tabs.innerHTML = '';
+            serviceData[currentLang].forEach((s, i) => {
+                const btn = document.createElement('button');
+                btn.onclick = () => switchService(i);
+                btn.className = `service-btn ${i === 0 ? 'active' : ''} w-full p-6 md:p-8 squircle text-left flex items-center gap-6 transition-all font-bold`;
+                btn.innerHTML = `<i data-lucide="${['users-2', 'phone', 'message-square', 'search'][i]}" class="w-5 h-5"></i><span class="text-base md:text-xl">${s.title}</span>`;
+                tabs.appendChild(btn);
+            });
+            lucide.createIcons();
+            switchService(0);
+        }
+
+        function switchService(idx) {
+            const btns = document.querySelectorAll('.service-btn');
+            btns.forEach((btn, i) => btn.classList.toggle('active', i === idx));
+            const content = document.getElementById('service-content');
+            if(!content) return;
+            content.style.opacity = '0'; content.style.filter = 'blur(10px)';
+            const s = serviceData[currentLang][idx];
+            setTimeout(() => {
+                const badge = document.getElementById('s-badge');
+                const title = document.getElementById('s-title');
+                const desc = document.getElementById('s-desc');
+                const res = document.getElementById('s-res');
+                if(badge) badge.textContent = s.badge;
+                if(title) title.textContent = s.title;
+                if(desc) desc.textContent = s.desc;
+                if(res) res.textContent = s.res;
+                content.style.opacity = '1'; content.style.filter = 'blur(0px)';
+            }, 300);
+        }
+
+        function renderPricing() {
+            [1, 2, 3].forEach(num => {
+                const list = document.getElementById(`pricing-list-${num}`);
+                if(!list) return;
+                list.innerHTML = '';
+                pricingData[currentLang][num-1].forEach(item => {
+                    list.innerHTML += `<li class="flex items-center gap-4 text-sm"><i data-lucide="check" class="text-premium-indigo w-4 h-4"></i> ${item}</li>`;
+                });
+            });
+            lucide.createIcons();
+        }
+
+        function initFAQ() {
+            const list = document.getElementById('faq-list');
+            if(!list) return;
+            list.innerHTML = '';
+            faqData[currentLang].forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = "group squircle glass overflow-hidden transition-all reveal";
+                div.innerHTML = `
+                    <button onclick="toggleFAQ(${i})" class="w-full p-8 flex justify-between items-center text-left">
+                        <span class="text-base md:text-xl font-bold tracking-tight text-slate-900 dark:text-white">${item.q}</span>
+                        <div id="faq-icon-${i}" class="p-2 rounded-full transition-all text-premium-indigo group-hover:bg-premium-indigo group-hover:text-white"><i data-lucide="plus"></i></div>
+                    </button>
+                    <div id="faq-ans-${i}" class="max-h-0 overflow-hidden transition-all duration-500"><p class="p-8 pt-0 text-slate-600 dark:text-slate-400 font-medium">${item.a}</p></div>`;
+                list.appendChild(div);
+                if (revealObserver) revealObserver.observe(div);
+            });
+            lucide.createIcons();
+        }
+
+        function toggleFAQ(idx) {
+            const ans = document.getElementById(`faq-ans-${idx}`);
+            const icon = document.getElementById(`faq-icon-${idx}`);
+            if(!ans || !icon) return;
+            const isOpen = ans.style.maxHeight !== '0px' && ans.style.maxHeight !== '';
+            ans.style.maxHeight = isOpen ? '0px' : '350px';
+            icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(45deg)';
+        }
+
+        function initReveal() {
+            revealObserver = new IntersectionObserver(es => {
+                es.forEach(e => { 
+                    if (e.isIntersecting) {
+                        e.target.classList.add('active');
+                        if (e.target.id === 'counter-case-3' || e.target.querySelector('#counter-case-3')) animateCounter('counter-case-3', 82, 2000);
+                    }
+                });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.reveal, .section-trigger-visual').forEach(el => revealObserver.observe(el));
+        }
+
+        function initNeuralBackground() {
+            const canvas = document.getElementById('bgCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            const particleCount = 70; const maxDistance = 240;
+            function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            class Particle {
+                constructor() { this.init(); }
+                init() {
+                    this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
+                    this.vx = (Math.random() - 0.5) * 0.7; this.vy = (Math.random() - 0.5) * 0.7;
+                    this.radius = Math.random() * 2 + 1;
+                    this.originalX = this.x; this.originalY = this.y;
+                }
+                update() {
+                    this.x += this.vx; this.y += this.vy;
+                    if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                    if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+
+                    // Improved Repulsion physics for all screen sizes
+                    const dx = this.x - mouseX;
+                    const dy = this.y - mouseY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    // Adaptive radius based on width
+                    const repulsionRadius = Math.max(180, window.innerWidth / 10);
+                    
+                    if (dist < repulsionRadius) {
+                        const force = (repulsionRadius - dist) / repulsionRadius;
+                        const moveX = (dx / dist) * force * 25;
+                        const moveY = (dy / dist) * force * 25;
+                        this.x += moveX;
+                        this.y += moveY;
+                    }
+                }
+                draw() { 
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); 
+                    ctx.fillStyle = document.documentElement.classList.contains('dark') ? 'rgba(129, 140, 248, 0.8)' : 'rgba(79, 70, 229, 0.6)';
+                    ctx.fill(); 
+                }
+            }
+            function setup() { resize(); particles = []; for (let i = 0; i < particleCount; i++) particles.push(new Particle()); }
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update(); particles[i].draw();
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x; const dy = particles[i].y - particles[j].y; const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < maxDistance) {
+                            ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y);
+                            const opacity = 1 - dist / maxDistance; 
+                            ctx.strokeStyle = document.documentElement.classList.contains('dark') ? `rgba(129, 140, 248, ${opacity * 0.3})` : `rgba(79, 70, 229, ${opacity * 0.2})`;
+                            ctx.lineWidth = 0.8; ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', setup); setup(); animate();
+        }
+
+        function initTiltEffect() {
+            if (window.innerWidth < 768) return;
+            document.querySelectorAll('.tilt-card').forEach(card => {
+                const hasScale = card.classList.contains('scale-105');
+                card.addEventListener('mousemove', e => {
+                    const rect = card.getBoundingClientRect(); const xc = rect.width / 2; const yc = rect.height / 2;
+                    const dx = e.clientX - rect.left - xc; const dy = e.clientY - rect.top - yc;
+                    card.style.transform = `perspective(1000px) rotateY(${dx / 25}deg) rotateX(${-dy / 25}deg) translateY(-10px) ${hasScale ? 'scale(1.05)' : ''}`;
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = `perspective(1000px) rotateY(0deg) rotateX(0deg) translateY(0px) ${hasScale ? 'scale(1.05)' : ''}`;
+                });
+            });
+        }
+
+        function animateCounter(id, target, duration) {
+            const el = document.getElementById(id); if (!el || el.dataset.animated === "true") return; el.dataset.animated = "true";
+            let start = 0;
+            const step = (timestamp) => {
+                if (!start) start = timestamp; const progress = Math.min((timestamp - start) / duration, 1);
+                el.innerText = Math.floor(progress * target) + "%"; if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function drawLogo() {
+            const canvas = document.getElementById('logoCanvas'); const ctx = canvas.getContext('2d'); let time = 0;
+            function animate() {
+                ctx.clearRect(0, 0, 100, 100); const grad = ctx.createLinearGradient(0, 0, 100, 100);
+                grad.addColorStop(0, '#4F46E5'); grad.addColorStop(1, '#9333EA');
+                ctx.beginPath(); ctx.arc(50, 50, 35 + Math.sin(time) * 3, 0, Math.PI * 2); ctx.strokeStyle = grad; ctx.lineWidth = 4; ctx.stroke();
+                ctx.beginPath(); ctx.arc(50, 50, 12 + Math.cos(time) * 2, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+                time += 0.035; requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        const cursor = document.getElementById('cursor-glow');
+        const updateGlow = (e) => {
+            const x = e.clientX || (e.touches && e.touches[0].clientX); 
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
+            if (x !== undefined && y !== undefined) {
+                mouseX = x; mouseY = y; // Global for particles
+                cursor.style.transform = `translate3d(${x}px, ${y}px, 0) translate3d(-50%, -50%, 0)`;
+            }
+        };
+        window.addEventListener('mousemove', updateGlow); 
+        window.addEventListener('touchmove', updateGlow, { passive: true });
+
+        function scrollToContact() { 
+            const el = document.getElementById('contact-form-block');
+            if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+        }
+
+        window.onload = () => {
+            const userLang = navigator.language || navigator.userLanguage;
+            if (userLang.startsWith('en')) currentLang = 'en';
+            initReveal();
+            updateLanguage();
+            lucide.createIcons(); drawLogo(); initNeuralBackground(); initTiltEffect();
+            const paths = document.querySelectorAll('.case-chart-path');
+            paths.forEach(p => p.style.setProperty('--path-length', p.getTotalLength()));
+            window.onscroll = () => {
+                const nav = document.getElementById('navbar');
+                if (window.scrollY > 80) nav.classList.add('bg-white/90', 'dark:bg-obsidian/90', 'backdrop-blur-2xl', 'py-4');
+                else nav.classList.remove('bg-white/90', 'dark:bg-obsidian/90', 'backdrop-blur-2xl', 'py-4');
+            };
+        };
+    </script>
+</body>
+</html>
